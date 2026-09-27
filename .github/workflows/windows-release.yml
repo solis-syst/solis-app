@@ -171,7 +171,7 @@ jobs:
         shell: powershell
         run: |
           $exe = Get-ChildItem -Path build -Filter "*.exe" -Recurse |
-            Where-Object { $_.Name -like "Solis*.exe" -and $_.Name -notlike "SolisApp-*.exe" } |
+            Where-Object { $_.Name -like "Solis-*.exe" } |
             Select-Object -First 1
 
           if (-not $exe) {
