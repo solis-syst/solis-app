@@ -20,6 +20,9 @@ public:
                            const std::filesystem::path& destination,
                            ProgressCallback progress) const;
 
+    bool downloadChecksum(const UpdateInfo& update,
+                          const std::filesystem::path& destination) const;
+
 private:
     std::string owner_;
     std::string repository_;
