@@ -25,28 +25,14 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 0
 
-      - name: Prepare release tag
+      - name: Prepare release
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
 
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid tag: $TAG"
             echo "Use the format v0.1.1"
-            exit 1
-          fi
-
-          if gh api --silent "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
-            echo "Source tag $TAG exists. Continuing release."
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            gh api "repos/$GITHUB_REPOSITORY/git/refs" \
-              -f ref="refs/tags/$TAG" \
-              -f sha="$GITHUB_SHA" >/dev/null
-            echo "Created source tag $TAG."
-          else
-            echo "Source tag $TAG is missing for a tag-triggered release."
             exit 1
           fi
 
