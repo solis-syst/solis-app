@@ -27,6 +27,16 @@ target_include_directories(solis PRIVATE src)
 target_compile_definitions(solis PRIVATE SOLIS_VERSION="${PROJECT_VERSION}")
 
 if(WIN32)
+    add_executable(solis-updater
+        src/updater/DeltaTool.cpp
+        src/updater/Sha256Verifier.cpp
+    )
+
+    target_include_directories(solis-updater PRIVATE src)
+    target_link_libraries(solis-updater PRIVATE msdelta bcrypt)
+endif()
+
+if(WIN32)
     target_link_libraries(solis PRIVATE winhttp bcrypt)
 endif()
 
@@ -37,6 +47,12 @@ else()
     target_compile_options(solis PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+if(MSVC AND WIN32)
+    target_compile_options(solis-updater PRIVATE /W4 /permissive-)
+elseif(WIN32)
+    target_compile_options(solis-updater PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 if(WIN32)
     set(CPACK_PACKAGE_NAME "Solis")
     set(CPACK_PACKAGE_VENDOR "solis-syst")
@@ -45,7 +61,7 @@ if(WIN32)
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "Solis")
     set(CPACK_GENERATOR "NSIS")
 
-    install(TARGETS solis RUNTIME DESTINATION .)
+    install(TARGETS solis solis-updater RUNTIME DESTINATION .)
 
     include(CPack)
 endif()
