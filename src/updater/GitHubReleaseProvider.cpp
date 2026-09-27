@@ -377,6 +377,7 @@ bool extractInstaller(const std::string& json, std::string& name, std::string& u
         if (urlPos != std::string::npos &&
             (nextAssets == std::string::npos || urlPos < nextAssets) &&
             assetName.size() >= 4 &&
+            assetName.starts_with("Solis") &&
             assetName.ends_with(".exe")) {
             name = assetName;
             url = extractString(json, "browser_download_url", urlPos);
