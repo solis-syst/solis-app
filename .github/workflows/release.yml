@@ -63,7 +63,7 @@ jobs:
             exit 1
           }
 
-          $blockmap = Get-Item "$([$installer.FullName]).blockmap" -ErrorAction SilentlyContinue
+          $blockmap = Get-Item "$($installer.FullName).blockmap" -ErrorAction SilentlyContinue
           if (-not $blockmap) {
             Write-Error "Installer blockmap was not found: $([$installer.FullName]).blockmap"
             exit 1
