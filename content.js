@@ -12,8 +12,9 @@ let debugEngine = false;
 let url = window.location.href;
 
 const chess2 = new Chess();
-// Inject a.js
-preInjection();
+if (typeof preInjection === "function") {
+  preInjection();
+}
 
 const interval = 100;
 
