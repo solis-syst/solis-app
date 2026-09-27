@@ -1,0 +1,97 @@
+name: Solis Windows Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build, for example v1.0.1"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install NSIS
+        shell: powershell
+        run: choco install nsis -y --no-progress
+
+      - name: Resolve version
+        id: version
+        shell: powershell
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "${{ inputs.tag }}"
+          } else {
+            $tag = "${{ github.ref_name }}"
+          }
+
+          if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+            Write-Error "Tag must use vMAJOR.MINOR.PATCH format."
+            exit 1
+          }
+
+          $version = $tag.Substring(1)
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Configure
+        shell: powershell
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DSOLIS_VERSION=${{ steps.version.outputs.version }}
+
+      - name: Build
+        shell: powershell
+        run: cmake --build build --config Release
+
+      - name: Create NSIS installer
+        shell: powershell
+        run: cpack --config build/CPackConfig.cmake -G NSIS
+
+      - name: Locate installer
+        id: installer
+        shell: powershell
+        run: |
+          $exe = Get-ChildItem -Path build -Filter "*.exe" -Recurse |
+            Where-Object { $_.Name -like "Solis*.exe" } |
+            Select-Object -First 1
+
+          if (-not $exe) {
+            Write-Error "Solis NSIS installer was not produced."
+            exit 1
+          }
+
+          "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+          "name=$($exe.Name)" >> $env:GITHUB_OUTPUT
+
+      - name: Create checksum
+        shell: powershell
+        run: |
+          $exe = "${{ steps.installer.outputs.path }}"
+          $hash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  ${{ steps.installer.outputs.name }}" |
+            Set-Content -Path "$exe.sha256" -Encoding ascii
+
+      - name: Publish GitHub Release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" `
+            "${{ steps.installer.outputs.path }}" `
+            "${{ steps.installer.outputs.path }}.sha256" `
+            --title "${{ steps.version.outputs.tag }}" `
+            --generate-notes
