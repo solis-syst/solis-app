@@ -62,7 +62,7 @@ jobs:
           else
             git fetch --no-tags --depth=1 "$UPDATE_REPO" "refs/heads/main:refs/remotes/update/main"
             git tag "$RELEASE_TAG" "refs/remotes/update/main"
-            git -c http.extraheader="AUTHORIZATION: bearer $GITHUB_RELEASE_TOKEN"               push "$UPDATE_REPO" "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            git -c "http.extraheader=AUTHORIZATION: bearer $GITHUB_RELEASE_TOKEN" push "$UPDATE_REPO" "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
           fi
 
       - name: Set release version
