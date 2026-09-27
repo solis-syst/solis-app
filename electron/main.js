@@ -18,19 +18,19 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow = null;
 let browserWindow = null;
 
-const configPath = path.join(app.getPath("userData"), "config.json");
+function getConfigPath() {\n  return path.join(app.getPath("userData"), "config.json");\n}
 
 function readStorage() {
   try {
-    return JSON.parse(fs.readFileSync(configPath, "utf8"));
+    return JSON.parse(fs.readFileSync(getConfigPath(), "utf8"));
   } catch {
     return {};
   }
 }
 
 function writeStorage(storage) {
-  fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, JSON.stringify(storage, null, 2), "utf8");
+  fs.mkdirSync(path.dirname(getConfigPath()), { recursive: true });
+  fs.writeFileSync(getConfigPath(), JSON.stringify(storage, null, 2), "utf8");
 }
 
 function createMainWindow() {
