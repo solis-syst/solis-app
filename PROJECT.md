@@ -452,10 +452,11 @@ Current trigger modes:
 Current workflow behavior:
 1. Checkout the workflow ref.
 2. Validate the release tag.
-3. For manual runs, create and push the requested tag when it does not already exist.
-4. Set the package version in the build workspace.
-5. Install dependencies.
-6. Run the electron-builder release script.
+3. For manual runs, create and push the requested tag in the source repository when it does not already exist.
+4. Create the same release tag in solis-syst/solis-app-updates when it does not already exist, using that repository's main commit as the tag target.
+5. Set the package version in the build workspace.
+6. Install dependencies.
+7. Run the electron-builder release script.
 
 Separate build-artifact workflow:
 `.github/workflows/build.yml`
@@ -653,6 +654,12 @@ Status: Active.
 Decision: Enable NSIS differential packaging and leave update code-signature verification disabled until Authenticode signing is available.
 Reason: Enable blockmap updates without requiring paid Windows signing.
 Affected files: `package.json`.
+Status: Active.
+
+2026-09-27
+Decision: Create the release tag in both the source repository and the separate update repository before electron-builder publishes the GitHub release.
+Reason: GitHub requires a valid tag in the target update repository for a published release.
+Affected files: `.github/workflows/release.yml`.
 Status: Active.
 
 Format:
