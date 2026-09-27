@@ -35,7 +35,7 @@ if(WIN32)
     )
 
     target_include_directories(solis-updater PRIVATE src)
-    target_link_libraries(solis-updater PRIVATE msdelta bcrypt)
+    target_link_libraries(solis-updater PRIVATE msdelta bcrypt shell32)
 endif()
 
 if(WIN32)
