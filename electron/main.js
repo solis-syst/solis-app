@@ -28,7 +28,7 @@ function readStorage() {
   }
 }
 
-function writeConfig(config) {
+function writeStorage(storage) {
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
 }
