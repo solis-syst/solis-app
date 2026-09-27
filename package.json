@@ -11,7 +11,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis --publish never",
-    "release": "electron-builder --win nsis --publish always"
+    "release": "electron-builder --win nsis --publish never"
   },
   "build": {
     "appId": "com.solis.chess",
@@ -31,7 +31,7 @@
       "provider": "github",
       "owner": "solis-syst",
       "repo": "solis-app-updates",
-      "releaseType": "release",
+      "releaseType": "draft",
       "publishAutoUpdate": true
     }
   },
