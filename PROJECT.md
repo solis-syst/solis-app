@@ -452,7 +452,7 @@ Current trigger modes:
 Current workflow behavior:
 1. Checkout the workflow ref.
 2. Validate the release tag.
-3. For manual runs, create and push the requested tag in the source repository when it does not already exist.
+3. For manual runs, create and push the requested tag in the source repository when it does not already exist. If the source tag already exists, continue so an interrupted release can be resumed.
 4. Create the same release tag in solis-syst/solis-app-updates when it does not already exist, using that repository's main commit as the tag target.
 5. Set the package version in the build workspace.
 6. Install dependencies.
