@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, net, protocol } = require("electron");
 const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
+const { setupUpdater, installUpdate } = require("./updater");
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -18,7 +19,9 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow = null;
 let browserWindow = null;
 
-function getConfigPath() {\n  return path.join(app.getPath("userData"), "config.json");\n}
+function getConfigPath() {
+  return path.join(app.getPath("userData"), "config.json");
+}
 
 function readStorage() {
   try {
@@ -149,8 +152,8 @@ async function handlePageMessage(sender, message) {
   }
 
   if (message.type === "storage:set") {
-    const config = { ...readConfig(), ...message.items };
-    writeConfig(config);
+    const storage = { ...readStorage(), ...message.items };
+    writeStorage(storage);
     return {
       requestId: message.requestId,
       type: "storage:response",
@@ -289,11 +292,18 @@ app.whenReady().then(() => {
     handlePageMessage(event.sender, message)
   );
 
+  ipcMain.handle("update:install", () => {
+    installUpdate();
+    return true;
+  });
+
   createMainWindow();
+  setupUpdater(mainWindow);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createMainWindow();
+      setupUpdater(mainWindow);
     }
   });
 });
