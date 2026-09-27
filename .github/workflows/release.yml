@@ -85,18 +85,18 @@ jobs:
           $latest = @"
 version: $env:RELEASE_VERSION
 files:
-  - url: $([$installer.Name])
+  - url: $($installer.Name)
     sha512: $sha512
-    size: $([$installer.Length])
-path: $([$installer.Name])
+    size: $($installer.Length)
+path: $($installer.Name)
 sha512: $sha512
 releaseDate: $releaseDate
 "@
 
           Set-Content -Path "dist/latest.yml" -Value $latest -Encoding utf8
 
-          "INSTALLER=$([$installer.FullName])" >> $env:GITHUB_ENV
-          "BLOCKMAP=$([$blockmap.FullName])" >> $env:GITHUB_ENV
+          "INSTALLER=$($installer.FullName)" >> $env:GITHUB_ENV
+          "BLOCKMAP=$($blockmap.FullName)" >> $env:GITHUB_ENV
 
       - name: Publish update repository release
         shell: bash
@@ -111,6 +111,5 @@ releaseDate: $releaseDate
             gh release edit "$RELEASE_TAG" --repo "$UPDATE_REPO" --title "$RELEASE_VERSION" --latest
           else
             echo "Creating published release $RELEASE_TAG."
-            gh release create "$RELEASE_TAG" "$INSTALLER" "$BLOCKMAP" --repo "$UPDATE_REPO" --title "$RELEASE_VERSION" --latest --target main
-            gh release upload "$RELEASE_TAG" "dist/latest.yml" --repo "$UPDATE_REPO" --clobber
+            gh release create "$RELEASE_TAG" "$INSTALLER" "$BLOCKMAP" "dist/latest.yml" --repo "$UPDATE_REPO" --title "$RELEASE_VERSION" --latest --target main
           fi
