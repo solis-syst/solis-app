@@ -23,6 +23,16 @@ public:
     bool downloadChecksum(const UpdateInfo& update,
                           const std::filesystem::path& destination) const;
 
+    bool downloadApplicationChecksum(const UpdateInfo& update,
+                                     const std::filesystem::path& destination) const;
+
+    bool downloadDelta(const UpdateInfo& update,
+                       const std::filesystem::path& destination,
+                       ProgressCallback progress) const;
+
+    bool downloadDeltaChecksum(const UpdateInfo& update,
+                               const std::filesystem::path& destination) const;
+
 private:
     std::string owner_;
     std::string repository_;
