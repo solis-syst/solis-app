@@ -457,6 +457,22 @@ Current workflow behavior:
 5. Install dependencies.
 6. Run the electron-builder release script.
 
+Separate build-artifact workflow:
+`.github/workflows/build.yml`
+
+Current trigger modes:
+- Push to `main`
+- Manual workflow dispatch
+
+Current build-artifact behavior:
+1. Checkout the source tree.
+2. Install dependencies.
+3. Run the existing Windows NSIS `npm run dist` build with publishing disabled.
+4. Select the generated installer EXE and copy it to `artifact/Solis-Setup.exe`.
+5. Upload `artifact/Solis-Setup.exe` as the `Solis-Windows-Installer` GitHub Actions artifact.
+
+The GitHub Actions artifact is compressed by `actions/upload-artifact`; downloading the artifact provides the Solis installer EXE after extraction.
+
 Current publishing environment:
 `GITHUB_RELEASE_TOKEN: \${{ secrets.SOLIS_RELEASE_TOKEN }}`
 
@@ -602,6 +618,7 @@ Before considering a major Solis change complete:
 
 ### Packaging
 - [ ] Windows NSIS installer builds
+- [ ] GitHub Actions build workflow uploads the installer EXE as a downloadable artifact
 - [ ] Packaged app starts outside the development environment
 - [ ] No missing asset/runtime DLL errors
 - [ ] Required engine/model assets exist in the packaged application
