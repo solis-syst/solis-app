@@ -115,7 +115,7 @@ int wmain(int argc, wchar_t* argv[]) {
             : 1;
     }
 
-    if (argc == 5 &&
+    if (argc == 6 &&
         std::wstring(argv[1]) == L"--apply-delta") {
         return applyDelta(
             std::filesystem::path(argv[2]),
