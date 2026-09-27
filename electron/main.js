@@ -20,7 +20,7 @@ let browserWindow = null;
 
 const configPath = path.join(app.getPath("userData"), "config.json");
 
-function readConfig() {
+function readStorage() {
   try {
     return JSON.parse(fs.readFileSync(configPath, "utf8"));
   } catch {
@@ -137,12 +137,12 @@ async function handlePageMessage(sender, message) {
   if (!message || message.source !== "solis-page") return {};
 
   if (message.type === "storage:get") {
-    const config = readConfig();
+    const storage = readStorage();
     return {
       requestId: message.requestId,
       type: "storage:response",
       value: message.keys.reduce((result, key) => {
-        result[key] = config[key];
+        result[key] = storage[key];
         return result;
       }, {})
     };
@@ -159,7 +159,7 @@ async function handlePageMessage(sender, message) {
   }
 
   if (message.type === "storage:clear") {
-    writeConfig({});
+    writeStorage({});
     return {
       requestId: message.requestId,
       type: "storage:response",
@@ -273,15 +273,15 @@ app.whenReady().then(() => {
     return true;
   });
 
-  ipcMain.handle("config:get", () => readConfig());
+  ipcMain.handle("config:get", () => readStorage().chessConfig || {});
 
   ipcMain.handle("config:set", (_event, config) => {
-    writeConfig(config || {});
+    writeStorage({ ...readStorage(), chessConfig: config || {} });
     return true;
   });
 
   ipcMain.handle("config:clear", () => {
-    writeConfig({});
+    writeStorage({});
     return true;
   });
 
