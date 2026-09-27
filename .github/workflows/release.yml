@@ -5,6 +5,11 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (example: v0.1.1)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -16,6 +21,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.ref }}
+
+      - name: Validate tag
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        run: |
+          TAG="${{ inputs.tag }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid tag: $TAG"
+            echo "Use the format v0.1.1"
+            exit 1
+          fi
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Set release version
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        run: npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
 
       - name: Setup Node
         uses: actions/setup-node@v4
