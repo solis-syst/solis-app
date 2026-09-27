@@ -13,11 +13,11 @@ It can run in two ways:
 - Push a tag matching `v*.*.*`
 - Manually use GitHub Actions → Release Solis → Run workflow
 
-The workflow installs the Node dependencies, builds the Windows NSIS installer with electron-builder, and publishes the release to the `solis-syst/solis-app-updates` GitHub Releases.
+The workflow installs the Node dependencies, builds the Windows NSIS installer with electron-builder, and publishes the release artifacts to the `solis-syst/solis-app-updates` GitHub Releases.
 
 ## Auto-update
 
-The packaged application uses `electron-updater` and checks the GitHub Releases feed for `solis-syst/solis-app-updates`.
+The packaged application uses `electron-updater` and checks the GitHub Releases feed configured by electron-builder for `solis-syst/solis-app-updates`.
 
 When a newer release is available, the updater downloads it in the background and can install it on application restart.
 
