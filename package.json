@@ -31,7 +31,8 @@
       "provider": "github",
       "owner": "solis-syst",
       "repo": "solis-app-updates",
-      "releaseType": "release"
+      "releaseType": "release",
+      "publishAutoUpdate": true
     }
   },
   "dependencies": {
