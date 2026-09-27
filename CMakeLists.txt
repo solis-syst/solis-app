@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 set(SOLIS_VERSION "1.0.0" CACHE STRING "Solis application version")
 project(solis VERSION ${SOLIS_VERSION} LANGUAGES CXX)
 
-find_package(Qt6 6.11 REQUIRED COMPONENTS Gui Qml Quick QuickControls2)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Gui Qml Quick QuickControls2)
 qt_standard_project_setup(REQUIRES 6.8)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -81,6 +81,7 @@ if(WIN32)
     set(CPACK_GENERATOR "NSIS")
 
     install(TARGETS solis solis-updater RUNTIME DESTINATION .)
+    install(DIRECTORY "${CMAKE_BINARY_DIR}/qt-deploy/" DESTINATION .)
 
     include(CPack)
 endif()
