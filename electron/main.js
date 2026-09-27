@@ -36,6 +36,31 @@ function writeStorage(storage) {
   fs.writeFileSync(getConfigPath(), JSON.stringify(storage, null, 2), "utf8");
 }
 
+function postPageMessage(message) {
+  if (!browserWindow || browserWindow.isDestroyed()) return;
+  const payload = JSON.stringify(message);
+  browserWindow.webContents.executeJavaScript(
+    `window.postMessage(${payload}, "*");`,
+    true
+  ).catch(() => {});
+}
+
+function broadcastStorageChange(changes) {
+  postPageMessage({
+    source: "solis-electron-main",
+    message: {
+      type: "storage:changed",
+      changes,
+      areaName: "local"
+    }
+  });
+}
+
+function sendAnalyzerMessage(message) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send("analyzer:message", message);
+}
+
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -82,6 +107,7 @@ async function injectSolis() {
   if (!isSupportedSite(url)) return;
 
   const files = [
+    "a.js",
     "alert.js",
     "engines/chess_min.js",
     "engines/maia3/maia3-tokenizer.js",
@@ -152,21 +178,42 @@ async function handlePageMessage(sender, message) {
   }
 
   if (message.type === "storage:set") {
-    const storage = { ...readStorage(), ...message.items };
+    const storage = readStorage();
+    const changes = {};
+
+    for (const [key, newValue] of Object.entries(message.items || {})) {
+      changes[key] = {
+        oldValue: storage[key],
+        newValue
+      };
+      storage[key] = newValue;
+    }
+
     writeStorage(storage);
+    broadcastStorageChange(changes);
+
     return {
       requestId: message.requestId,
       type: "storage:response",
-      value: {}
+      value: { changes }
     };
   }
 
   if (message.type === "storage:clear") {
+    const storage = readStorage();
+    const changes = Object.fromEntries(
+      Object.entries(storage).map(([key, oldValue]) => ({
+        [key]: { oldValue, newValue: undefined }
+      })).map((entry) => Object.entries(entry)[0])
+    );
+
     writeStorage({});
+    broadcastStorageChange(changes);
+
     return {
       requestId: message.requestId,
       type: "storage:response",
-      value: {}
+      value: { changes }
     };
   }
 
@@ -181,69 +228,30 @@ async function handlePageMessage(sender, message) {
 async function handleRuntimeMessage(sender, message) {
   if (!message || typeof message !== "object") return;
 
+  sendAnalyzerMessage(message);
+
   if (message.type === "FETCH_AUDIO") {
     return;
   }
 
-  if (message.type === "STREAM") {
-    try {
-      await fetch("http://127.0.0.1:5000/api/arrowEngine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moves: message.moves, side: message.side })
-      });
-    } catch {}
+  if (message.type === "ATTACH_DEBUGGER") {
     return;
   }
 
-  if (message.type === "FEN_UPDATE") {
-    try {
-      await fetch("http://127.0.0.1:5000/api/update_fen");
-      await fetch("http://127.0.0.1:5000/api/color", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(message.colors)
-      });
-    } catch {}
+  if (message.type === "FROM_CONTENT" || message.type === "BOARD_INFO") {
     return;
   }
 
-  const endpoints = {
-    ACC: ["accuracy", {
-      accWhite: message.whiteAcc,
-      EloWhite: message.whiteElo,
-      accBlack: message.blackAcc,
-      EloBlack: message.blackElo
-    }],
-    HINT: ["hint", {
-      from: message.from,
-      to: message.to,
-      side: message.side,
-      tags: message.tags,
-      mateIn: message.mateIn
-    }],
-    PV: ["pv", {
-      side: message.side,
-      fen: message.fen,
-      pv: message.pv
-    }],
-    SVG: ["placeSVG", {
-      side: message.side,
-      square: message.square,
-      moveclassification: message.moveClassification
-    }]
-  };
-
-  const endpoint = endpoints[message.type];
-  if (!endpoint) return;
-
-  try {
-    await fetch(`http://127.0.0.1:5000/api/${endpoint[0]}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(endpoint[1])
-    });
-  } catch {}
+  if (
+    message.type === "STREAM" ||
+    message.type === "FEN_UPDATE" ||
+    message.type === "ACC" ||
+    message.type === "HINT" ||
+    message.type === "PV" ||
+    message.type === "SVG"
+  ) {
+    return;
+  }
 }
 
 app.whenReady().then(() => {
@@ -276,15 +284,53 @@ app.whenReady().then(() => {
     return true;
   });
 
+  ipcMain.handle("browser:message", (_event, message) => {
+    if (!message || typeof message !== "object") {
+      throw new Error("Invalid browser message");
+    }
+
+    postPageMessage({
+      source: "solis-electron-main",
+      message
+    });
+
+    return true;
+  });
+
   ipcMain.handle("config:get", () => readStorage().chessConfig || {});
 
   ipcMain.handle("config:set", (_event, config) => {
-    writeStorage({ ...readStorage(), chessConfig: config || {} });
+    const storage = readStorage();
+    const oldValue = storage.chessConfig;
+    const newValue = config || {};
+
+    storage.chessConfig = newValue;
+    writeStorage(storage);
+
+    broadcastStorageChange({
+      chessConfig: {
+        oldValue,
+        newValue
+      }
+    });
+
     return true;
   });
 
   ipcMain.handle("config:clear", () => {
-    writeStorage({});
+    const storage = readStorage();
+    const oldValue = storage.chessConfig;
+
+    delete storage.chessConfig;
+    writeStorage(storage);
+
+    broadcastStorageChange({
+      chessConfig: {
+        oldValue,
+        newValue: undefined
+      }
+    });
+
     return true;
   });
 
