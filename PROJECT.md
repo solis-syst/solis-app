@@ -414,15 +414,17 @@ Current behavior:
 - Current code still has `autoInstallOnAppQuit = true`.
 - Current code exposes an IPC path for installation.
 
-Current update repository configuration is still:
-`solis-syst/solis-app`
+Current update repository configuration:
+`solis-syst/solis-app-updates`
 
-This is a current-state fact, not the final decision.
+The source repository remains `solis-syst/solis-app`.
 
 ### Planned update repository
 
 Target update repository:
 `solis-syst/solis-app-updates`
+
+This is now the active release/update repository.
 
 Target release assets:
 - `latest.yml`
@@ -456,9 +458,9 @@ Current workflow behavior:
 6. Run the electron-builder release script.
 
 Current publishing environment:
-`GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}`
+`GITHUB_RELEASE_TOKEN: \${{ secrets.SOLIS_RELEASE_TOKEN }}`
 
-This is not yet the planned custom-token mapping.
+`SOLIS_RELEASE_TOKEN` is the GitHub Actions secret and is mapped to the environment variable recognized by electron-builder.
 
 Important consistency note:
 - The current workflow creates the manual release tag before running `npm version` in the workspace.
@@ -477,7 +479,7 @@ Current electron-builder target:
 - NSIS
 
 Planned update configuration:
-- `win.verifyUpdateCodeSignature: true`
+- `win.verifyUpdateCodeSignature: false` because Solis is currently unsigned and SmartScreen warnings are accepted.
 - NSIS `differentialPackage: true`
 - GitHub publisher points to `solis-syst/solis-app-updates`
 - Published release type is a normal published release, not a draft
@@ -539,10 +541,11 @@ Do not change injection order without checking initialization dependencies.
 
 - Renderer UI is still a basic dashboard and is not the final Solis UI.
 - There is no dedicated engine-manager abstraction yet; engine selection lives in the analyzer.
-- Auto-update configuration still targets the main source repository.
-- The workflow still uses the default GitHub token environment variable.
-- Differential NSIS configuration has not yet been applied to the current `package.json`.
+- Updater releases now target `solis-syst/solis-app-updates`.
+- The workflow now maps `SOLIS_RELEASE_TOKEN` to `GITHUB_RELEASE_TOKEN`.
+- NSIS differential packaging is enabled in `package.json`.
 - Updater currently enables `autoInstallOnAppQuit`; the planned UX is to prompt before installation.
+- Windows Authenticode signing is not currently configured; SmartScreen warnings are accepted.
 - `engines/engine.js` is a confirmed placeholder and should be removed in a scoped cleanup change.
 - `utils/no` and `book/no` are still present.
 - Current browser/page message handling should receive a dedicated security review before exposing more capabilities.
@@ -616,6 +619,24 @@ Before considering a major Solis change complete:
 ## 21. Future Decision Log
 
 Add entries here when an architecture or release decision becomes stable.
+
+2026-09-27
+Decision: Use `solis-syst/solis-app-updates` as the active GitHub Releases repository for Solis updates.
+Reason: Separate source code from public update artifacts.
+Affected files: `package.json`, `.github/workflows/release.yml`, `docs/releases.md`.
+Status: Active.
+
+2026-09-27
+Decision: Publish releases using the `SOLIS_RELEASE_TOKEN` GitHub Actions secret mapped to `GITHUB_RELEASE_TOKEN`.
+Reason: Keep the custom secret name while using electron-builder's supported variable.
+Affected files: `.github/workflows/release.yml`.
+Status: Active.
+
+2026-09-27
+Decision: Enable NSIS differential packaging and leave update code-signature verification disabled until Authenticode signing is available.
+Reason: Enable blockmap updates without requiring paid Windows signing.
+Affected files: `package.json`.
+Status: Active.
 
 Format:
 
