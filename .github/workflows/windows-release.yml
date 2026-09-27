@@ -99,18 +99,32 @@ jobs:
         run: |
           "created=false" >> $env:GITHUB_OUTPUT
 
-          $latest = gh api repos/solis-syst/solis-app-updates/releases/latest 2>$null
+          try {
+            $previousRelease = Invoke-RestMethod `
+              -Uri "https://api.github.com/repos/solis-syst/solis-app-updates/releases/latest" `
+              -Headers @{ `
+                Accept = "application/vnd.github+json"; `
+                "X-GitHub-Api-Version" = "2022-11-28" `
+              } `
+              -ErrorAction Stop
+          } catch {
+            $statusCode = $null
+            if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+              $statusCode = [int]$_.Exception.Response.StatusCode
+            }
 
-          if ($LASTEXITCODE -ne 0 -or -not $latest) {
-            Write-Host "No previous release is available for delta creation."
+            if ($statusCode -eq 404) {
+              Write-Host "No previous release is available for delta creation."
+            } else {
+              Write-Host "Previous release metadata could not be retrieved. Skipping delta creation."
+            }
+
             exit 0
           }
 
-          try {
-            $previousRelease = $latest | ConvertFrom-Json
-            $previousTag = $previousRelease.tag_name
-          } catch {
-            Write-Host "Previous release metadata could not be parsed."
+          $previousTag = $previousRelease.tag_name
+          if (-not $previousTag) {
+            Write-Host "Previous release metadata did not contain a tag."
             exit 0
           }
 
