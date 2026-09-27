@@ -146,7 +146,7 @@ Responsibilities:
 - Display analyzer/update status.
 - Trigger update installation through the preload API.
 
-The current renderer is still a basic test/dashboard UI, not the final Solis interface.
+The current renderer contains the 0.1.6 UI rework: a desktop app shell, navigation, analysis launch area, browser/engine/update status cards, and current-session status. This rework is renderer-only and does not change analyzer, engine, IPC, preload, or browser runtime interfaces.
 
 ### Preload
 
@@ -660,6 +660,12 @@ Status: Active.
 Decision: Create the release tag in both the source repository and the separate update repository before electron-builder publishes the GitHub release.
 Reason: GitHub requires a valid tag in the target update repository for a published release.
 Affected files: `.github/workflows/release.yml`.
+Status: Active.
+
+2026-09-27
+Decision: Make Solis 0.1.6 the first dedicated desktop UI-rework release.
+Reason: Replace the basic dashboard with a more structured Solis desktop shell while preserving the existing analyzer, browser, updater, and IPC behavior.
+Affected files: `renderer/index.html`, `renderer/styles.css`, `renderer/renderer.js`.
 Status: Active.
 
 Format:
