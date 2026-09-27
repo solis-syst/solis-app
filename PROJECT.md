@@ -1,8 +1,6 @@
 # Solis Project Specification
 
-Status: Active
-Last verified against: `main`
-Verified commit: `cbc249dcc28d6f2a76958e3fc6fbb1d444489bfa`
+
 Date: 2026-09-27
 
 This file is the source of truth for Solis architecture, repository structure, runtime boundaries, engine inventory, and locked decisions. New changes must be checked against this document before implementation.
