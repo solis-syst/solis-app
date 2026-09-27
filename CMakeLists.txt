@@ -38,8 +38,6 @@ else()
 endif()
 
 if(WIN32)
-    include(CPack)
-
     set(CPACK_PACKAGE_NAME "Solis")
     set(CPACK_PACKAGE_VENDOR "solis-syst")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Solis Chess Analyzer")
@@ -48,4 +46,6 @@ if(WIN32)
     set(CPACK_GENERATOR "NSIS")
 
     install(TARGETS solis RUNTIME DESTINATION .)
+
+    include(CPack)
 endif()
