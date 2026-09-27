@@ -22,23 +22,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.ref }}
+          ref: ${{ github.ref }}
+          fetch-depth: 0
 
-      - name: Validate tag
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Prepare release tag
         shell: bash
         run: |
-          TAG="${{ inputs.tag }}"
+          TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid tag: $TAG"
             echo "Use the format v0.1.1"
             exit 1
           fi
+
+          if git ls-remote --exit-code --refs origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+              echo "Tag $TAG already exists."
+              echo "Use a different version tag."
+              exit 1
+            fi
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
           echo "RELEASE_VERSION=${TAG#v}" >> "$GITHUB_ENV"
 
       - name: Set release version
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         shell: bash
         run: npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
 
