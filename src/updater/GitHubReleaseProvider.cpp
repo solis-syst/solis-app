@@ -420,7 +420,11 @@ bool GitHubReleaseProvider::fetchLatest(UpdateInfo& update) const {
         return false;
     }
 
-    return !update.version.empty() && !update.installerUrl.empty();
+    update.checksumUrl = update.installerUrl + ".sha256";
+
+    return !update.version.empty() &&
+           !update.installerUrl.empty() &&
+           !update.checksumUrl.empty();
 }
 
 bool GitHubReleaseProvider::downloadInstaller(
@@ -432,6 +436,16 @@ bool GitHubReleaseProvider::downloadInstaller(
     }
 
     return httpDownload(update.installerUrl, destination, std::move(progress));
+}
+
+bool GitHubReleaseProvider::downloadChecksum(
+    const UpdateInfo& update,
+    const std::filesystem::path& destination) const {
+    if (update.checksumUrl.empty()) {
+        return false;
+    }
+
+    return httpDownload(update.checksumUrl, destination, {});
 }
 
 }
@@ -454,6 +468,12 @@ bool GitHubReleaseProvider::downloadInstaller(
     const UpdateInfo&,
     const std::filesystem::path&,
     ProgressCallback) const {
+    return false;
+}
+
+bool GitHubReleaseProvider::downloadChecksum(
+    const UpdateInfo&,
+    const std::filesystem::path&) const {
     return false;
 }
 
