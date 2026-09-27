@@ -2,6 +2,7 @@
 
 #include "core/Version.h"
 #include "updater/GitHubReleaseProvider.h"
+#include "updater/Sha256Verifier.h"
 #include "updater/WindowsInstaller.h"
 
 #include <filesystem>
@@ -124,6 +125,25 @@ bool Updater::checkForUpdates(bool promptUser) {
         std::filesystem::remove(destination);
         return false;
     }
+
+    const auto checksumPath = std::filesystem::path(destination.string() + ".sha256");
+
+    log(L"Downloading update checksum.");
+
+    if (!provider.downloadChecksum(update, checksumPath)) {
+        log(L"Checksum download failed.");
+        std::filesystem::remove(destination);
+        return false;
+    }
+
+    if (!Sha256Verifier::verify(destination, checksumPath)) {
+        log(L"Installer checksum verification failed.");
+        std::filesystem::remove(destination);
+        std::filesystem::remove(checksumPath);
+        return false;
+    }
+
+    std::filesystem::remove(checksumPath);
 
     const auto readyMessage =
         L"The Solis update has been downloaded.\n\n" +
