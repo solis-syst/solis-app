@@ -18,6 +18,7 @@ add_executable(solis
     src/settings/Settings.cpp
     src/sites/SiteManager.cpp
     src/updater/GitHubReleaseProvider.cpp
+    src/updater/Sha256Verifier.cpp
     src/updater/Updater.cpp
     src/updater/WindowsInstaller.cpp
 )
@@ -26,7 +27,7 @@ target_include_directories(solis PRIVATE src)
 target_compile_definitions(solis PRIVATE SOLIS_VERSION="${PROJECT_VERSION}")
 
 if(WIN32)
-    target_link_libraries(solis PRIVATE winhttp)
+    target_link_libraries(solis PRIVATE winhttp bcrypt)
 endif()
 
 if(MSVC)
