@@ -15,12 +15,12 @@ public:
     void shutdown() override;
 
     bool checkForUpdates(bool promptUser = true);
+    bool restartRequested() const;
 
 private:
-    bool downloadAndInstall(const UpdateInfo& update);
-
     std::string owner_;
     std::string repository_;
+    bool restartRequested_ = false;
 };
 
 }
