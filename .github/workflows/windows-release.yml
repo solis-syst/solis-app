@@ -53,7 +53,8 @@ jobs:
           host: windows
           target: desktop
           arch: win64_msvc2022_64
-          modules: qtdeclarative qtshadertools qttools
+          archives: qtbase qtdeclarative qttools
+          modules: qtshadertools
           cache: true
       - name: Configure
         shell: powershell
