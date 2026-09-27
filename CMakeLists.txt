@@ -13,6 +13,7 @@ add_executable(solis
     src/analysis/Analyzer.cpp
     src/browser/BrowserManager.cpp
     src/browser/ManagedBrowserDownloader.cpp
+    src/browser/ManagedBrowserBootstrapper.cpp
     src/core/EventBus.cpp
     src/core/Version.cpp
     src/engines/EngineManager.cpp
@@ -38,7 +39,7 @@ if(WIN32)
 endif()
 
 if(WIN32)
-    target_link_libraries(solis PRIVATE winhttp bcrypt comctl32)
+    target_link_libraries(solis PRIVATE winhttp bcrypt comctl32 shell32)
 endif()
 
 if(MSVC)
