@@ -359,14 +359,17 @@ std::string extractString(const std::string& json, const std::string& key, std::
     return result;
 }
 
-bool extractInstaller(const std::string& json, std::string& name, std::string& url) {
+bool extractAssets(const std::string& json,
+                   std::string& installerUrl,
+                   std::string& checksumUrl) {
     std::size_t search = json.find("\"assets\"");
 
     while (search != std::string::npos) {
         const auto namePos = json.find("\"name\"", search);
         const auto nextAssets = json.find("\"assets\"", search + 1);
 
-        if (namePos == std::string::npos || (nextAssets != std::string::npos && namePos > nextAssets)) {
+        if (namePos == std::string::npos ||
+            (nextAssets != std::string::npos && namePos > nextAssets)) {
             search = nextAssets;
             continue;
         }
@@ -375,19 +378,21 @@ bool extractInstaller(const std::string& json, std::string& name, std::string& u
         const auto urlPos = json.find("\"browser_download_url\"", namePos);
 
         if (urlPos != std::string::npos &&
-            (nextAssets == std::string::npos || urlPos < nextAssets) &&
-            assetName.size() >= 4 &&
-            assetName.starts_with("Solis") &&
-            assetName.ends_with(".exe")) {
-            name = assetName;
-            url = extractString(json, "browser_download_url", urlPos);
-            return !url.empty();
+            (nextAssets == std::string::npos || urlPos < nextAssets)) {
+            const auto assetUrl = extractString(json, "browser_download_url", urlPos);
+
+            if (assetName.starts_with("Solis") && assetName.ends_with(".exe")) {
+                installerUrl = assetUrl;
+            } else if (assetName.starts_with("Solis") &&
+                       assetName.ends_with(".exe.sha256")) {
+                checksumUrl = assetUrl;
+            }
         }
 
         search = nextAssets;
     }
 
-    return false;
+    return !installerUrl.empty() && !checksumUrl.empty();
 }
 
 }
@@ -415,12 +420,9 @@ bool GitHubReleaseProvider::fetchLatest(UpdateInfo& update) const {
 
     update.releaseUrl = extractString(body, "html_url");
 
-    std::string installerName;
-    if (!extractInstaller(body, installerName, update.installerUrl)) {
+    if (!extractAssets(body, update.installerUrl, update.checksumUrl)) {
         return false;
     }
-
-    update.checksumUrl = update.installerUrl + ".sha256";
 
     return !update.version.empty() &&
            !update.installerUrl.empty() &&
