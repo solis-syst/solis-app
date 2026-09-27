@@ -482,3 +482,156 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.controls-section {
+  margin-top: 14px;
+  padding: 22px;
+  border: 1px solid #232831;
+  border-radius: 16px;
+  background: #111419;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.section-heading h2 {
+  margin: 7px 0 0;
+  font-size: 20px;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.control {
+  display: grid;
+  gap: 9px;
+  padding: 15px;
+  border: 1px solid #252a32;
+  border-radius: 12px;
+  background: #0e1115;
+}
+
+.control > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #cbd1d9;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.control output {
+  color: #8b94a1;
+  font-weight: 500;
+}
+
+.control select,
+.control input[type="range"] {
+  width: 100%;
+}
+
+.control select {
+  padding: 10px 11px;
+  border: 1px solid #2b313a;
+  border-radius: 9px;
+  background: #171b21;
+  color: #edf0f4;
+  outline: none;
+}
+
+.control select:focus {
+  border-color: #596477;
+}
+
+.control input[type="range"] {
+  accent-color: #dfe3e8;
+}
+
+.toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px solid #252a32;
+  border-radius: 12px;
+  background: #0e1115;
+  cursor: pointer;
+}
+
+.toggle input {
+  margin-top: 2px;
+  accent-color: #dfe3e8;
+}
+
+.toggle-copy strong,
+.toggle-copy small {
+  display: block;
+}
+
+.toggle-copy strong {
+  color: #cbd1d9;
+  font-size: 12px;
+}
+
+.toggle-copy small {
+  margin-top: 4px;
+  color: #727b88;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.control-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.settings-status {
+  color: #737c89;
+  font-size: 12px;
+}
+
+.control-actions button {
+  margin-left: 8px;
+}
+
+.control-actions button:first-child {
+  margin-left: 0;
+}
+
+@media (max-width: 760px) {
+  .controls-grid,
+  .toggle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .control-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .control-actions > div {
+    display: flex;
+  }
+
+  .control-actions button {
+    flex: 1;
+  }
+}
