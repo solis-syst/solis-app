@@ -30,6 +30,7 @@ if(WIN32)
 endif()
 
 if(MSVC)
+    set_property(TARGET solis PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     target_compile_options(solis PRIVATE /W4 /permissive-)
 else()
     target_compile_options(solis PRIVATE -Wall -Wextra -Wpedantic)
