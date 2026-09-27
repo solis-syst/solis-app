@@ -69,9 +69,9 @@ std::filesystem::path currentExecutablePath() {
     const DWORD length = GetModuleFileNameW(
         nullptr,
         buffer,
-        static_cast<DWORD>(std::size(buffer)));
+        static_cast<DWORD>(sizeof(buffer) / sizeof(buffer[0])));
 
-    if (length == 0 || length >= std::size(buffer)) {
+    if (length == 0 || length >= sizeof(buffer) / sizeof(buffer[0])) {
         return {};
     }
 
