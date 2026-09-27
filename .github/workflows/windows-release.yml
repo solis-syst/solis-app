@@ -206,7 +206,7 @@ jobs:
       - name: Deploy Qt runtime
         shell: powershell
         run: |
-          $deploy = Join-Path $pwd "qt-deploy"
+          $deploy = Join-Path $pwd "build\qt-deploy"
           Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $deploy
           New-Item -ItemType Directory -Force -Path $deploy | Out-Null
 
@@ -219,6 +219,11 @@ jobs:
           & $windeployqt --release --no-translations --qmldir "$pwd\src\ui" --dir $deploy "$pwd\build\Release\solis.exe"
           if ($LASTEXITCODE -ne 0) {
             Write-Error "windeployqt failed."
+            exit 1
+          }
+
+          if (-not (Test-Path $deploy)) {
+            Write-Error "Qt deployment directory was not produced."
             exit 1
           }
       - name: Create NSIS installer
