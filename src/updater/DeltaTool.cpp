@@ -35,7 +35,7 @@ bool createDelta(const std::filesystem::path& source,
 
     return CreateDeltaW(
         DELTA_FILE_TYPE_SET_EXECUTABLES,
-        DELTA_FLAG_IGNORE_FILE_SIZE_LIMIT,
+        DELTA_FLAG_NONE,
         DELTA_FLAG_NONE,
         source.c_str(),
         target.c_str(),
