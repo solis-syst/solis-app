@@ -3,7 +3,7 @@
 namespace solis {
 
 Application::Application()
-    : updater_("solis-syst", "solis-app") {
+    : updater_("solis-syst", "solis-app-updates") {
 }
 
 bool Application::initialize() {
