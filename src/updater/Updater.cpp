@@ -4,13 +4,13 @@
 #include "updater/GitHubReleaseProvider.h"
 #include "updater/WindowsInstaller.h"
 
-#ifdef _WIN32
-
-#include <windows.h>
-
 #include <filesystem>
 #include <string>
 #include <utility>
+
+#ifdef _WIN32
+
+#include <windows.h>
 
 namespace solis {
 
