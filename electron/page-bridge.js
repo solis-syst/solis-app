@@ -72,8 +72,9 @@
     }
   };
 
-  window.chrome = {
-    runtime: {
+  window.chrome = window.chrome || {};
+  window.chrome.runtime = {
+    
       id: "solis",
       getURL(path) {
         return "solis://bundle/" + String(path).replace(/^\/+/, "");
@@ -97,7 +98,6 @@
           });
         }
       }
-    },
-    storage
   };
+  window.chrome.storage = storage;
 })();
