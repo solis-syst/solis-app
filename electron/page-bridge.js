@@ -49,7 +49,7 @@
       set(items, callback) {
         request("storage:set", { items }).then(() => {
           for (const listener of listeners) {
-            listener(items);
+            listener(value.changes || {}, "local");
           }
           if (typeof callback === "function") callback();
         });
