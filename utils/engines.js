@@ -11,7 +11,7 @@ async function loadWorkerScript(path) {
 }
 
 async function createWorkerStockfish6() {
-  const code = await loadWorkerScript("lib/stockfish6.js");
+  const code = await loadWorkerScript("engines/stockfish6.js");
 
   const blob = new Blob([code], {
     type: "application/javascript",
@@ -21,7 +21,7 @@ async function createWorkerStockfish6() {
 }
 
 async function createWorkerStockfish11() {
-  const code = await loadWorkerScript("lib/stockfish11.js");
+  const code = await loadWorkerScript("engines/stockfish11.js");
 
   const blob = new Blob([code], {
     type: "application/javascript",
@@ -32,7 +32,7 @@ async function createWorkerStockfish11() {
 
 // create webworker for komodo
 async function createWorkerKomodo() {
-  const code = await loadWorkerScript("lib/komodo.js");
+  const code = await loadWorkerScript("engines/komodo.js");
 
   const blob = new Blob([code], {
     type: "application/javascript",
@@ -43,7 +43,7 @@ async function createWorkerKomodo() {
 
 // create webworker for torch (coach)
 async function createWorkerTorch() {
-  const code = await loadWorkerScript("lib/torch.js");
+  const code = await loadWorkerScript("engines/torch.js");
 
   const blob = new Blob([code], {
     type: "application/javascript",
@@ -697,7 +697,7 @@ class Stockfish11 {
 }
 
 async function createWorkerMaia3() {
-  const code = await loadWorkerScript("lib/maia3/maia3-worker.js");
+  const code = await loadWorkerScript("engines/maia3/maia3-worker.js");
   const blob = new Blob([code], { type: "application/javascript" });
   return new Worker(URL.createObjectURL(blob));
 }
@@ -724,13 +724,13 @@ class Maia3 {
     this.worker = await createWorkerMaia3();
 
     // ORT blob URL
-    const ortResp = await fetch(chrome.runtime.getURL("lib/ort/ort.min.js"));
+    const ortResp = await fetch(chrome.runtime.getURL("engines/ort/ort.min.js"));
     const ortText = await ortResp.text();
     const ortBlob = new Blob([ortText], { type: "application/javascript" });
     const ortRuntimeUrl = URL.createObjectURL(ortBlob);
 
     // all_moves cache
-    const r = await fetch(chrome.runtime.getURL("lib/maia3/all_moves.json"));
+    const r = await fetch(chrome.runtime.getURL("engines/maia3/all_moves.json"));
     this._allMoves = await r.json();
     this._allMovesDict = {};
     this._allMoves.forEach((m, i) => (this._allMovesDict[m] = i));
@@ -772,8 +772,8 @@ class Maia3 {
 
       this.worker.postMessage({
         type: "init",
-        modelUrl: chrome.runtime.getURL("lib/maia3/maia3-5m.onnx"),
-        ortBaseUrl: chrome.runtime.getURL("lib/ort/"),
+        modelUrl: chrome.runtime.getURL("engines/maia3/maia3-5m.onnx"),
+        ortBaseUrl: chrome.runtime.getURL("engines/ort/"),
         ortRuntimeUrl: ortRuntimeUrl,
       });
     });
@@ -861,7 +861,7 @@ class Lozza {
 
   async createWorker() {
     if (this.worker) this.worker.terminate();
-    const url = chrome.runtime.getURL("lib/lozza.js");
+    const url = chrome.runtime.getURL("engines/lozza.js");
     const blob = new Blob([`importScripts("${url}");`], {
       type: "application/javascript",
     });
@@ -917,7 +917,7 @@ class Wukong {
 
   async createWorker() {
     if (this.worker) this.worker.terminate();
-    const url = chrome.runtime.getURL("lib/wukong.js");
+    const url = chrome.runtime.getURL("engines/wukong.js");
     const blob = new Blob([`importScripts("${url}");`], {
       type: "application/javascript",
     });
