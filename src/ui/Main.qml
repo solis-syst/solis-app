@@ -60,7 +60,7 @@ ApplicationWindow {
                 }
 
                 Label {
-                    text: "v" + "0.0.0"
+                    text: "Native Desktop"
                     opacity: 0.6
                 }
             }
