@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.20)
 set(SOLIS_VERSION "1.0.0" CACHE STRING "Solis application version")
 project(solis VERSION ${SOLIS_VERSION} LANGUAGES CXX)
 
+find_package(Qt6 6.11 REQUIRED COMPONENTS Gui Qml Quick QuickControls2)
+qt_standard_project_setup(REQUIRES 6.8)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
