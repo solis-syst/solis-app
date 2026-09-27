@@ -13,7 +13,7 @@ It can run in two ways:
 - Push a tag matching `v*.*.*`
 - Manually use GitHub Actions → Release Solis → Run workflow
 
-The workflow installs the Node dependencies, builds the Windows NSIS installer with electron-builder, and publishes the release artifacts to the `solis-syst/solis-app-updates` GitHub Releases.
+The workflow installs the Node dependencies and builds the Windows NSIS installer with electron-builder without publishing through electron-builder. GitHub Actions then generates latest.yml from the built installer and publishes the installer, blockmap, and latest.yml together to solis-syst/solis-app-updates.
 
 ## Auto-update
 
@@ -45,10 +45,14 @@ Expected Windows release assets:
 
 ## Publishing token
 
-GitHub Actions uses the repository secret `SOLIS_RELEASE_TOKEN` and exposes it to electron-builder as `GITHUB_RELEASE_TOKEN`. Never place the token in the packaged application.
+GitHub Actions uses the repository secret SOLIS_RELEASE_TOKEN as GH_TOKEN for the GitHub CLI when publishing to solis-syst/solis-app-updates. The token is not passed to the packaged application.
 
 ## Differential updates
 
 NSIS differential updates are enabled with `differentialPackage: true`. If differential data cannot be used, electron-updater can fall back to the full installer.
 
 Solis is currently unsigned, so Windows SmartScreen warnings are expected. Update code-signature verification remains disabled until Authenticode signing is available.
+
+## Publish reliability
+
+The release workflow does not use electron-builder's GitHub publisher. The Windows build uses --publish never; Actions publishes the final installer, blockmap, and generated latest.yml directly through the GitHub CLI. Retries replace existing assets so an interrupted release can be repaired without rebuilding the release repository state.
