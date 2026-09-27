@@ -1,6 +1,7 @@
 #include "core/Version.h"
 
 #include <charconv>
+#include <system_error>
 #include <string_view>
 #include <vector>
 
