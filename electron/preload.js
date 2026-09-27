@@ -2,10 +2,16 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("solis", {
   openBrowser: (url) => ipcRenderer.invoke("browser:open", url),
+  sendBrowserMessage: (message) => ipcRenderer.invoke("browser:message", message),
   getConfig: () => ipcRenderer.invoke("config:get"),
   setConfig: (config) => ipcRenderer.invoke("config:set", config),
   clearConfig: () => ipcRenderer.invoke("config:clear"),
   installUpdate: () => ipcRenderer.invoke("update:install"),
+  onAnalyzerMessage: (callback) => {
+    const listener = (_event, message) => callback(message);
+    ipcRenderer.on("analyzer:message", listener);
+    return () => ipcRenderer.removeListener("analyzer:message", listener);
+  },
   onUpdateStatus: (callback) => {
     const listener = (_event, status) => callback(status);
     ipcRenderer.on("update:status", listener);
