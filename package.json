@@ -18,17 +18,19 @@
     "productName": "Solis",
     "asar": true,
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": false
+      "allowToChangeInstallationDirectory": false,
+      "differentialPackage": true
     },
     "publish": {
       "provider": "github",
       "owner": "solis-syst",
-      "repo": "solis-app",
+      "repo": "solis-app-updates",
       "releaseType": "release"
     }
   },
