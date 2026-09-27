@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <utility>
 
 namespace solis {
 
