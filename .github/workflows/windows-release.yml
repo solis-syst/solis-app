@@ -59,7 +59,7 @@ jobs:
 
       - name: Create NSIS installer
         shell: powershell
-        run: cpack --config build/CPackConfig.cmake -G NSIS
+        run: cpack --config build/CPackConfig.cmake -C Release -G NSIS
 
       - name: Locate installer
         id: installer
