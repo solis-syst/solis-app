@@ -18,7 +18,7 @@
       </div>
 
       <nav class="nav" aria-label="Main navigation">
-        <button class="nav-item active" type="button">
+        <button class="nav-item active" type="button" id="nav-dashboard">
           <span class="nav-icon">⌂</span>
           Dashboard
         </button>
@@ -70,6 +70,76 @@
           <div class="orbit orbit-one"></div>
           <div class="orbit orbit-two"></div>
           <div class="orbit-core">♟</div>
+        </div>
+      </section>
+
+      <section class="controls-section" id="controls-card">
+        <div class="section-heading">
+          <div>
+            <span class="section-label">CONTROLS</span>
+            <h2>Analysis settings</h2>
+          </div>
+          <span class="badge">Saved locally</span>
+        </div>
+
+        <div class="controls-grid">
+          <label class="control">
+            <span>Engine</span>
+            <select id="engine">
+              <option value="komodo">Komodo</option>
+              <option value="stockfish11">Stockfish 11</option>
+              <option value="stockfish6">Stockfish 6</option>
+              <option value="lozza">Lozza</option>
+              <option value="wukong">Wukong</option>
+              <option value="maia3">Maia 3</option>
+              <option value="None">None</option>
+            </select>
+          </label>
+
+          <label class="control">
+            <span>Engine Elo <output id="elo-value">3500</output></span>
+            <input id="elo" type="range" min="1000" max="3500" step="50" value="3500">
+          </label>
+
+          <label class="control">
+            <span>Depth <output id="depth-value">10</output></span>
+            <input id="depth" type="range" min="1" max="30" step="1" value="10">
+          </label>
+
+          <label class="control">
+            <span>Lines <output id="lines-value">5</output></span>
+            <input id="lines" type="range" min="1" max="10" step="1" value="5">
+          </label>
+        </div>
+
+        <div class="toggle-grid">
+          <label class="toggle">
+            <input id="show-eval" type="checkbox">
+            <span class="toggle-copy"><strong>Show evaluation</strong><small>Display the evaluation bar on the board.</small></span>
+          </label>
+
+          <label class="toggle">
+            <input id="accuracy" type="checkbox">
+            <span class="toggle-copy"><strong>Accuracy</strong><small>Show accuracy information when available.</small></span>
+          </label>
+
+          <label class="toggle">
+            <input id="coach" type="checkbox">
+            <span class="toggle-copy"><strong>Coach</strong><small>Enable the existing local coach path.</small></span>
+          </label>
+
+          <label class="toggle">
+            <input id="auto-start" type="checkbox">
+            <span class="toggle-copy"><strong>Auto start</strong><small>Start supported games automatically when detected.</small></span>
+          </label>
+        </div>
+
+        <div class="control-actions">
+          <span id="settings-status" class="settings-status">Loading settings...</span>
+          <div>
+            <button id="reset-settings" class="secondary" type="button">Reset</button>
+            <button id="save-settings" class="primary" type="button">Save settings</button>
+          </div>
         </div>
       </section>
 
