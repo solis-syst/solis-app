@@ -39,23 +39,6 @@ jobs:
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
           echo "RELEASE_VERSION=${TAG#v}" >> "$GITHUB_ENV"
 
-      - name: Prepare update repository tag
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.SOLIS_RELEASE_TOKEN }}
-        run: |
-          UPDATE_REPO="solis-syst/solis-app-updates"
-
-          if gh api --silent "repos/$UPDATE_REPO/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "Update repository tag $RELEASE_TAG exists. Continuing release."
-          else
-            UPDATE_SHA=$(gh api "repos/$UPDATE_REPO/git/ref/heads/main" --jq ".object.sha")
-            gh api "repos/$UPDATE_REPO/git/refs" \
-              -f ref="refs/tags/$RELEASE_TAG" \
-              -f sha="$UPDATE_SHA" >/dev/null
-            echo "Created update repository tag $RELEASE_TAG."
-          fi
-
       - name: Set release version
         shell: bash
         run: npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version
@@ -68,7 +51,65 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build and publish
-        run: npm run release
+      - name: Build installer
+        run: npm run dist
+
+      - name: Generate update metadata
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path dist -Filter "Solis Setup $env:RELEASE_VERSION.exe" -File | Select-Object -First 1
+          if (-not $installer) {
+            Write-Error "Installer for version $env:RELEASE_VERSION was not found."
+            exit 1
+          }
+
+          $blockmap = Get-Item "$($installer.FullName).blockmap" -ErrorAction SilentlyContinue
+          if (-not $blockmap) {
+            Write-Error "Installer blockmap was not found: $($installer.FullName).blockmap"
+            exit 1
+          }
+
+          $hash = [System.Security.Cryptography.SHA512]::Create()
+          try {
+            $stream = [System.IO.File]::OpenRead($installer.FullName)
+            try {
+              $sha512 = [Convert]::ToBase64String($hash.ComputeHash($stream))
+            } finally {
+              $stream.Dispose()
+            }
+          } finally {
+            $hash.Dispose()
+          }
+
+          $releaseDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+          $latest = @"
+version: $env:RELEASE_VERSION
+files:
+  - url: $($installer.Name)
+    sha512: $sha512
+    size: $($installer.Length)
+path: $($installer.Name)
+sha512: $sha512
+releaseDate: $releaseDate
+"@
+
+          Set-Content -Path "dist/latest.yml" -Value $latest -Encoding utf8
+
+          "INSTALLER=$($installer.FullName)" >> $env:GITHUB_ENV
+          "BLOCKMAP=$($blockmap.FullName)" >> $env:GITHUB_ENV
+
+      - name: Publish update repository release
+        shell: bash
         env:
-          GITHUB_RELEASE_TOKEN: ${{ secrets.SOLIS_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.SOLIS_RELEASE_TOKEN }}
+        run: |
+          UPDATE_REPO="solis-syst/solis-app-updates"
+
+          if gh release view "$RELEASE_TAG" --repo "$UPDATE_REPO" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists. Refreshing its assets."
+            gh release upload "$RELEASE_TAG"               "$INSTALLER"               "$BLOCKMAP"               "dist/latest.yml"               --repo "$UPDATE_REPO"               --clobber
+            gh release edit "$RELEASE_TAG"               --repo "$UPDATE_REPO"               --title "$RELEASE_VERSION"               --latest
+          else
+            echo "Creating published release $RELEASE_TAG."
+            gh release create "$RELEASE_TAG"               "$INSTALLER"               "$BLOCKMAP"               "dist/latest.yml"               --repo "$UPDATE_REPO"               --title "$RELEASE_VERSION"               --latest               --target main
+          fi
