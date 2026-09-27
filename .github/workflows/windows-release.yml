@@ -30,10 +30,10 @@ jobs:
         id: version
         shell: powershell
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $tag = "${{ inputs.tag }}"
+          if ("\${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "\${{ inputs.tag }}"
           } else {
-            $tag = "${{ github.ref_name }}"
+            $tag = "\${{ github.ref_name }}"
           }
 
           if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
@@ -51,11 +51,116 @@ jobs:
         run: >
           cmake -S . -B build
           -DCMAKE_BUILD_TYPE=Release
-          -DSOLIS_VERSION=${{ steps.version.outputs.version }}
+          -DSOLIS_VERSION=\${{ steps.version.outputs.version }}
 
       - name: Build
         shell: powershell
         run: cmake --build build --config Release
+
+      - name: Prepare application binary
+        id: application
+        shell: powershell
+        run: |
+          $directory = Join-Path $pwd "release"
+          New-Item -ItemType Directory -Force -Path $directory | Out-Null
+
+          $source = Join-Path $pwd "build\Release\solis.exe"
+          if (-not (Test-Path $source)) {
+            Write-Error "Solis application executable was not produced."
+            exit 1
+          }
+
+          $name = "SolisApp-\${{ steps.version.outputs.version }}.exe"
+          $destination = Join-Path $directory $name
+
+          Copy-Item -Path $source -Destination $destination -Force
+
+          $hash = (Get-FileHash -Path $destination -Algorithm SHA256).Hash.ToLower()
+          "$hash  $name" | Set-Content -Path "$destination.sha256" -Encoding ascii
+
+          "path=$destination" >> $env:GITHUB_OUTPUT
+          "name=$name" >> $env:GITHUB_OUTPUT
+
+      - name: Create differential update
+        id: delta
+        shell: powershell
+        env:
+          GH_TOKEN: \${{ secrets.SOLIS_RELEASE_TOKEN }}
+        run: |
+          "created=false" >> $env:GITHUB_OUTPUT
+
+          $latest = gh api repos/solis-syst/solis-app-updates/releases/latest 2>$null
+
+          if ($LASTEXITCODE -ne 0 -or -not $latest) {
+            Write-Host "No previous release is available for delta creation."
+            exit 0
+          }
+
+          try {
+            $previousRelease = $latest | ConvertFrom-Json
+            $previousTag = $previousRelease.tag_name
+          } catch {
+            Write-Host "Previous release metadata could not be parsed."
+            exit 0
+          }
+
+          if (-not $previousTag -or $previousTag -eq "\${{ steps.version.outputs.tag }}") {
+            Write-Host "No usable previous release was found."
+            exit 0
+          }
+
+          $baseDirectory = Join-Path $pwd "delta-base"
+          New-Item -ItemType Directory -Force -Path $baseDirectory | Out-Null
+
+          gh release download $previousTag \`
+            --repo solis-syst/solis-app-updates \`
+            --pattern "SolisApp-*.exe" \`
+            --dir $baseDirectory \`
+            --clobber
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Previous application binary is unavailable. Skipping delta."
+            exit 0
+          }
+
+          $base = Get-ChildItem -Path $baseDirectory -Filter "SolisApp-*.exe" |
+            Select-Object -First 1
+
+          if (-not $base) {
+            Write-Host "Previous application binary was not downloaded. Skipping delta."
+            exit 0
+          }
+
+          $deltaPath = Join-Path $pwd "release\SolisDelta-$($previousTag.TrimStart('v'))-to-\${{ steps.version.outputs.version }}.delta"
+          $deltaTool = Join-Path $pwd "build\Release\solis-updater.exe"
+
+          & $deltaTool --create-delta \`
+            "$($base.FullName)" \`
+            "\${{ steps.application.outputs.path }}" \`
+            "$deltaPath"
+
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path $deltaPath)) {
+            Write-Host "Delta creation failed. Skipping delta."
+            Remove-Item -Path $deltaPath -Force -ErrorAction SilentlyContinue
+            exit 0
+          }
+
+          $deltaSize = (Get-Item $deltaPath).Length
+          $applicationSize = (Get-Item "\${{ steps.application.outputs.path }}").Length
+
+          if ($deltaSize -ge $applicationSize) {
+            Write-Host "Delta is not smaller than the new application binary. Skipping delta."
+            Remove-Item -Path $deltaPath -Force
+            exit 0
+          }
+
+          $deltaName = Split-Path $deltaPath -Leaf
+          $hash = (Get-FileHash -Path $deltaPath -Algorithm SHA256).Hash.ToLower()
+          "$hash  $deltaName" | Set-Content -Path "$deltaPath.sha256" -Encoding ascii
+
+          "created=true" >> $env:GITHUB_OUTPUT
+          "path=$deltaPath" >> $env:GITHUB_OUTPUT
+          "name=$deltaName" >> $env:GITHUB_OUTPUT
 
       - name: Create NSIS installer
         shell: powershell
@@ -66,7 +171,7 @@ jobs:
         shell: powershell
         run: |
           $exe = Get-ChildItem -Path build -Filter "*.exe" -Recurse |
-            Where-Object { $_.Name -like "Solis*.exe" } |
+            Where-Object { $_.Name -like "Solis*.exe" -and $_.Name -notlike "SolisApp-*.exe" } |
             Select-Object -First 1
 
           if (-not $exe) {
@@ -77,28 +182,42 @@ jobs:
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
           "name=$($exe.Name)" >> $env:GITHUB_OUTPUT
 
-      - name: Create checksum
+      - name: Create installer checksum
         shell: powershell
         run: |
-          $exe = "${{ steps.installer.outputs.path }}"
+          $exe = "\${{ steps.installer.outputs.path }}"
           $hash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLower()
-          "$hash  ${{ steps.installer.outputs.name }}" |
+          "$hash  \${{ steps.installer.outputs.name }}" |
             Set-Content -Path "$exe.sha256" -Encoding ascii
 
       - name: Publish GitHub Release
         shell: powershell
         env:
-          GH_TOKEN: ${{ secrets.SOLIS_RELEASE_TOKEN }}
+          GH_TOKEN: \${{ secrets.SOLIS_RELEASE_TOKEN }}
         run: |
           if (-not $env:GH_TOKEN) {
             Write-Error "SOLIS_RELEASE_TOKEN is not configured."
             exit 1
           }
 
-          gh release create "${{ steps.version.outputs.tag }}" `
-            "${{ steps.installer.outputs.path }}" `
-            "${{ steps.installer.outputs.path }}.sha256" `
-            --repo solis-syst/solis-app-updates `
-            --title "Solis ${{ steps.version.outputs.version }}" `
-            --generate-notes
-
+          if ("\${{ steps.delta.outputs.created }}" -eq "true") {
+            gh release create "\${{ steps.version.outputs.tag }}" \`
+              "\${{ steps.installer.outputs.path }}" \`
+              "\${{ steps.installer.outputs.path }}.sha256" \`
+              "\${{ steps.application.outputs.path }}" \`
+              "\${{ steps.application.outputs.path }}.sha256" \`
+              "\${{ steps.delta.outputs.path }}" \`
+              "\${{ steps.delta.outputs.path }}.sha256" \`
+              --repo solis-syst/solis-app-updates \`
+              --title "Solis \${{ steps.version.outputs.version }}" \`
+              --generate-notes
+          } else {
+            gh release create "\${{ steps.version.outputs.tag }}" \`
+              "\${{ steps.installer.outputs.path }}" \`
+              "\${{ steps.installer.outputs.path }}.sha256" \`
+              "\${{ steps.application.outputs.path }}" \`
+              "\${{ steps.application.outputs.path }}.sha256" \`
+              --repo solis-syst/solis-app-updates \`
+              --title "Solis \${{ steps.version.outputs.version }}" \`
+              --generate-notes
+          }
