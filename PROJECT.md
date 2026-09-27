@@ -474,14 +474,14 @@ Current build-artifact behavior:
 The GitHub Actions artifact is compressed by `actions/upload-artifact`; downloading the artifact provides the Solis installer EXE after extraction.
 
 Current publishing environment:
-`GITHUB_RELEASE_TOKEN: \${{ secrets.SOLIS_RELEASE_TOKEN }}`
+`GH_TOKEN: \${{ secrets.SOLIS_RELEASE_TOKEN }}`
 
-`SOLIS_RELEASE_TOKEN` is the GitHub Actions secret and is mapped to the environment variable recognized by electron-builder.
+`SOLIS_RELEASE_TOKEN` is the GitHub Actions secret used by the GitHub CLI to publish to the dedicated update repository. The token is not passed to the packaged application.
 
 Important consistency note:
 - The current workflow creates the manual release tag before running `npm version` in the workspace.
 - Therefore, the tag itself currently points at the checked-out source commit, while the build workspace receives the release version afterward.
-- Do not silently redesign this release/version flow. Treat it as a separate release-workflow improvement.
+- Do not silently redesign the version flow. The release repository is responsible for release tags and artifacts; the source repository is only the build source.
 
 ## 14. Build Configuration
 
