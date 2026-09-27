@@ -12,7 +12,9 @@ public:
  bool setSession(std::unique_ptr<IBrowserSession>);
  IBrowserSession* session();
  bool downloadManagedBrowser(const std::string&, const std::filesystem::path&);
+ const std::filesystem::path& managedBrowserExecutable() const;
 private:
  std::unique_ptr<IBrowserSession> session_;
+ std::filesystem::path managedBrowserExecutable_;
 };
 }
