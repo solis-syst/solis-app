@@ -4,10 +4,39 @@
   "description": "Solis chess analyzer",
   "main": "electron/main.js",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solis-syst/solis-app.git"
+  },
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never",
+    "release": "electron-builder --win nsis --publish always"
+  },
+  "build": {
+    "appId": "com.solis.chess",
+    "productName": "Solis",
+    "asar": true,
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "solis-syst",
+      "repo": "solis-app",
+      "releaseType": "release"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9"
   },
   "devDependencies": {
-    "electron": "44.4.4"
+    "electron": "44.4.4",
+    "electron-builder": "26.16.1"
   }
 }
