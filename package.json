@@ -1,0 +1,13 @@
+{
+  "name": "solis",
+  "version": "0.1.0",
+  "description": "Solis chess analyzer",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "44.4.4"
+  }
+}
