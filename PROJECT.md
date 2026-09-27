@@ -451,12 +451,11 @@ Current trigger modes:
 
 Current workflow behavior:
 1. Checkout the workflow ref.
-2. Validate the release tag.
-3. For manual runs, create the requested source tag through the GitHub ref API when it does not already exist. If the source tag already exists, continue so an interrupted release can be resumed.
-4. Create the same release tag in solis-syst/solis-app-updates through the GitHub ref API when it does not already exist, using that repository's main commit as the tag target.
-5. Set the package version in the build workspace.
-6. Install dependencies.
-7. Run the electron-builder release script.
+2. Determine and validate the release version from the manual input or source tag trigger.
+3. Create the release tag only in solis-syst/solis-app-updates when it does not already exist, using that repository's main commit as the tag target.
+4. Set the package version in the build workspace.
+5. Install dependencies.
+6. Run the electron-builder release script.
 
 Separate build-artifact workflow:
 `.github/workflows/build.yml`
@@ -657,8 +656,8 @@ Affected files: `package.json`.
 Status: Active.
 
 2026-09-27
-Decision: Create the release tag in both the source repository and the separate update repository before electron-builder publishes the GitHub release, using exact GitHub ref API checks rather than git remote probing.
-Reason: GitHub requires a valid tag in the target update repository for a published release, and API checks avoid ambiguous tag detection during workflow retries.
+Decision: Treat solis-syst/solis-app-updates as the sole release-tag and GitHub Releases target. The source repository provides source and, when tag-triggered, the version signal only.
+Reason: The source repository does not need release tags for publishing; keeping release metadata and artifacts in the dedicated update repository is simpler and avoids duplicate release-tag management.
 Affected files: `.github/workflows/release.yml`.
 Status: Active.
 
