@@ -115,6 +115,18 @@ int wmain(int argc, wchar_t* argv[]) {
             : 1;
     }
 
+    if (argc == 5 &&
+        std::wstring(argv[1]) == L"--apply-delta") {
+        return applyDelta(
+            std::filesystem::path(argv[2]),
+            std::filesystem::path(argv[3]),
+            std::filesystem::path(argv[4]),
+            std::filesystem::path(argv[5]),
+            0)
+            ? 0
+            : 1;
+    }
+
     if (argc == 7 &&
         std::wstring(argv[1]) == L"--apply-delta") {
         DWORD parentPid = 0;
