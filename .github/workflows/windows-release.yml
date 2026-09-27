@@ -109,6 +109,23 @@ jobs:
             exit 0
           }
 
+          git fetch --no-tags origin "refs/tags/$previousTag:refs/tags/$previousTag"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Previous source tag is unavailable. Skipping delta."
+            exit 0
+          }
+
+          $helperChanges = git diff --name-only "$previousTag" HEAD -- `
+            "src/updater/DeltaTool.cpp" `
+            "src/updater/Sha256Verifier.cpp" `
+            "CMakeLists.txt"
+
+          if ($helperChanges) {
+            Write-Host "The delta helper changed since the previous release. Skipping delta."
+            exit 0
+          }
+
           $baseDirectory = Join-Path $pwd "delta-base"
           New-Item -ItemType Directory -Force -Path $baseDirectory | Out-Null
 
