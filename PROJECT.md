@@ -146,7 +146,7 @@ Responsibilities:
 - Display analyzer/update status.
 - Trigger update installation through the preload API.
 
-The current renderer contains the 0.1.6 UI rework: a desktop app shell, navigation, analysis launch area, browser/engine/update status cards, and current-session status. This rework is renderer-only and does not change analyzer, engine, IPC, preload, or browser runtime interfaces.
+The current renderer contains the 0.1.6 UI rework: a desktop app shell, navigation, analysis launch area, browser/engine/update status cards, current-session status, and a controls panel. The controls panel exposes the existing `chessConfig` fields for engine, Elo, depth, lines, coach, evaluation display, accuracy, and auto-start, using the existing `config:get` and `config:set` IPC bridge. Settings are persisted locally; engine initialization changes require reopening the chess browser because the analyzer currently reads configuration during page injection. This rework is renderer-only and does not change analyzer, engine, IPC, preload, or browser runtime interfaces.
 
 ### Preload
 
