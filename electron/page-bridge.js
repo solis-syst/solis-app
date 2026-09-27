@@ -47,7 +47,7 @@
       },
 
       set(items, callback) {
-        request("storage:set", { items }).then(() => {
+        request("storage:set", { items }).then((value) => {
           for (const listener of listeners) {
             listener(value.changes || {}, "local");
           }
