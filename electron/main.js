@@ -83,8 +83,8 @@ async function injectSolis() {
 
   const files = [
     "alert.js",
-    "lib/chess_min.js",
-    "lib/maia3/maia3-tokenizer.js",
+    "engines/chess_min.js",
+    "engines/maia3/maia3-tokenizer.js",
     "utils/const.js",
     "utils/config.js",
     "utils/engines.js",
