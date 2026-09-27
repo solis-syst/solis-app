@@ -101,7 +101,7 @@ bool applyDelta(const std::filesystem::path& source,
 }
 
 int wmain(int argc, wchar_t* argv[]) {
-    if (argc == 4 && std::wstring(argv[1]) == L"--create-delta") {
+    if (argc == 5 && std::wstring(argv[1]) == L"--create-delta") {
         return createDelta(
             std::filesystem::path(argv[2]),
             std::filesystem::path(argv[3]),
