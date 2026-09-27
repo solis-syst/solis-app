@@ -84,8 +84,9 @@ class komodo {
     }
   }
   quit() {
-    this.hardStop();
+    if (!this.worker) return;
     this.worker.postMessage("quit");
+    this.hardStop();
   }
 
   async restartWorker() {
