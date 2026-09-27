@@ -27,6 +27,8 @@ jobs:
 
       - name: Prepare release tag
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
 
@@ -36,11 +38,16 @@ jobs:
             exit 1
           fi
 
-          if git ls-remote --exit-code --refs origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Source tag $TAG already exists. Continuing so an interrupted release can be resumed."
+          if gh api --silent "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "Source tag $TAG exists. Continuing release."
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            git tag "$TAG"
-            git push origin "$TAG"
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/tags/$TAG" \
+              -f sha="$GITHUB_SHA" >/dev/null
+            echo "Created source tag $TAG."
+          else
+            echo "Source tag $TAG is missing for a tag-triggered release."
+            exit 1
           fi
 
           echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
@@ -49,16 +56,18 @@ jobs:
       - name: Prepare update repository tag
         shell: bash
         env:
-          GITHUB_RELEASE_TOKEN: ${{ secrets.SOLIS_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.SOLIS_RELEASE_TOKEN }}
         run: |
-          UPDATE_REPO="https://github.com/solis-syst/solis-app-updates.git"
+          UPDATE_REPO="solis-syst/solis-app-updates"
 
-          if git ls-remote --exit-code --refs "$UPDATE_REPO" "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "Update repository tag $RELEASE_TAG already exists."
+          if gh api --silent "repos/$UPDATE_REPO/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Update repository tag $RELEASE_TAG exists. Continuing release."
           else
-            git fetch --no-tags --depth=1 "$UPDATE_REPO" "refs/heads/main:refs/remotes/update/main"
-            git tag "$RELEASE_TAG" "refs/remotes/update/main"
-            git -c "http.extraheader=AUTHORIZATION: bearer $GITHUB_RELEASE_TOKEN" push "$UPDATE_REPO" "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            UPDATE_SHA=$(gh api "repos/$UPDATE_REPO/git/ref/heads/main" --jq ".object.sha")
+            gh api "repos/$UPDATE_REPO/git/refs" \
+              -f ref="refs/tags/$RELEASE_TAG" \
+              -f sha="$UPDATE_SHA" >/dev/null
+            echo "Created update repository tag $RELEASE_TAG."
           fi
 
       - name: Set release version
