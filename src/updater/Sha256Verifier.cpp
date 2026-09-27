@@ -2,12 +2,12 @@
 
 #ifdef _WIN32
 
+#include <windows.h>
 #include <bcrypt.h>
 
 #include <fstream>
 #include <string>
 #include <vector>
-#include <windows.h>
 
 namespace solis {
 
