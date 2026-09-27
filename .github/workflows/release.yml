@@ -37,11 +37,7 @@ jobs:
           fi
 
           if git ls-remote --exit-code --refs origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-              echo "Tag $TAG already exists."
-              echo "Use a different version tag."
-              exit 1
-            fi
+            echo "Source tag $TAG already exists. Continuing so an interrupted release can be resumed."
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             git tag "$TAG"
             git push origin "$TAG"
