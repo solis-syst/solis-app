@@ -26,17 +26,33 @@ std::wstring toWide(const std::string& value) {
         return {};
     }
 
-    const int size = MultiByteToWideChar(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), nullptr, 0);
+    const int size = MultiByteToWideChar(
+        CP_UTF8,
+        0,
+        value.data(),
+        static_cast<int>(value.size()),
+        nullptr,
+        0);
+
     if (size <= 0) {
         return {};
     }
 
     std::wstring result(size, L'\0');
-    MultiByteToWideChar(CP_UTF8, 0, value.data(), static_cast<int>(value.size()), result.data(), size);
+    MultiByteToWideChar(
+        CP_UTF8,
+        0,
+        value.data(),
+        static_cast<int>(value.size()),
+        result.data(),
+        size);
+
     return result;
 }
 
-std::filesystem::path temporaryInstallerPath(const std::string& version) {
+std::filesystem::path temporaryPath(
+    const std::string& version,
+    const std::wstring& suffix) {
     wchar_t buffer[MAX_PATH]{};
     const DWORD length = GetTempPathW(MAX_PATH, buffer);
 
@@ -45,7 +61,42 @@ std::filesystem::path temporaryInstallerPath(const std::string& version) {
     }
 
     return std::filesystem::path(buffer) /
-           (L"Solis-Update-" + toWide(version) + L".exe");
+           (L"Solis-Update-" + toWide(version) + suffix);
+}
+
+std::filesystem::path currentExecutablePath() {
+    wchar_t buffer[32768]{};
+    const DWORD length = GetModuleFileNameW(
+        nullptr,
+        buffer,
+        static_cast<DWORD>(std::size(buffer)));
+
+    if (length == 0 || length >= std::size(buffer)) {
+        return {};
+    }
+
+    return std::filesystem::path(
+        std::wstring(buffer, length));
+}
+
+void downloadProgress(
+    const wchar_t* label,
+    std::size_t downloaded,
+    std::size_t total) {
+    if (total == 0) {
+        return;
+    }
+
+    const auto percent =
+        static_cast<unsigned long long>(downloaded) * 100ULL /
+        static_cast<unsigned long long>(total);
+
+    OutputDebugStringW(
+        (L"[Solis Updater] " +
+         std::wstring(label) +
+         L": " +
+         std::to_wstring(percent) +
+         L"%\n").c_str());
 }
 
 }
@@ -86,8 +137,7 @@ bool Updater::checkForUpdates(bool promptUser) {
             nullptr,
             message.c_str(),
             L"Solis Update Available",
-            MB_ICONINFORMATION | MB_YESNO | MB_DEFBUTTON1
-        );
+            MB_ICONINFORMATION | MB_YESNO | MB_DEFBUTTON1);
 
         if (answer != IDYES) {
             log(L"User postponed update.");
@@ -95,40 +145,96 @@ bool Updater::checkForUpdates(bool promptUser) {
         }
     }
 
-    const auto destination = temporaryInstallerPath(update.version);
+    const bool canUseDelta =
+        update.deltaFromVersion == Version::current() &&
+        !update.deltaUrl.empty() &&
+        !update.deltaChecksumUrl.empty() &&
+        !update.applicationChecksumUrl.empty();
+
+    if (canUseDelta) {
+        const auto deltaPath = temporaryPath(update.version, L".delta");
+        const auto deltaChecksumPath = temporaryPath(
+            update.version,
+            L".delta.sha256");
+        const auto applicationChecksumPath = temporaryPath(
+            update.version,
+            L".application.sha256");
+
+        if (!deltaPath.empty() &&
+            !deltaChecksumPath.empty() &&
+            !applicationChecksumPath.empty()) {
+            log(L"Downloading differential update.");
+
+            if (provider.downloadDelta(
+                    update,
+                    deltaPath,
+                    [](std::size_t downloaded, std::size_t total) {
+                        downloadProgress(L"Delta download", downloaded, total);
+                    }) &&
+                provider.downloadDeltaChecksum(update, deltaChecksumPath) &&
+                Sha256Verifier::verify(deltaPath, deltaChecksumPath) &&
+                provider.downloadApplicationChecksum(
+                    update,
+                    applicationChecksumPath)) {
+                const auto currentExecutable = currentExecutablePath();
+
+                const auto readyMessage =
+                    L"The differential Solis update is ready.\n\n" +
+                    toWide(update.version) +
+                    L" will be applied after Solis closes.\n\nRestart and install now?";
+
+                if (!currentExecutable.empty() &&
+                    MessageBoxW(
+                        nullptr,
+                        readyMessage.c_str(),
+                        L"Solis Update Ready",
+                        MB_ICONINFORMATION | MB_YESNO | MB_DEFBUTTON1) == IDYES) {
+                    if (WindowsInstaller::launchDeltaUpdate(
+                            deltaPath,
+                            applicationChecksumPath,
+                            currentExecutable)) {
+                        restartRequested_ = true;
+                        return true;
+                    }
+
+                    log(L"Differential update launch failed.");
+                }
+            } else {
+                log(L"Differential update download or verification failed.");
+            }
+
+            std::filesystem::remove(deltaPath);
+            std::filesystem::remove(deltaChecksumPath);
+            std::filesystem::remove(applicationChecksumPath);
+        }
+    }
+
+    const auto destination = temporaryPath(update.version, L".exe");
     if (destination.empty()) {
         log(L"Unable to create temporary installer path.");
         return false;
     }
 
-    log(L"Downloading update.");
+    log(L"Downloading full installer.");
 
     if (!provider.downloadInstaller(
             update,
             destination,
             [](std::size_t downloaded, std::size_t total) {
-                if (total == 0) {
-                    return;
-                }
-
-                const auto percent =
-                    static_cast<unsigned long long>(downloaded) * 100ULL /
-                    static_cast<unsigned long long>(total);
-
-                OutputDebugStringW(
-                    (L"[Solis Updater] Download: " +
-                     std::to_wstring(percent) +
-                     L"%\n").c_str()
-                );
+                downloadProgress(
+                    L"Installer download",
+                    downloaded,
+                    total);
             })) {
         log(L"Update download failed.");
         std::filesystem::remove(destination);
         return false;
     }
 
-    const auto checksumPath = std::filesystem::path(destination.string() + ".sha256");
+    const auto checksumPath =
+        std::filesystem::path(destination.string() + ".sha256");
 
-    log(L"Downloading update checksum.");
+    log(L"Downloading full installer checksum.");
 
     if (!provider.downloadChecksum(update, checksumPath)) {
         log(L"Checksum download failed.");
