@@ -10,8 +10,9 @@
   },
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis --publish never",
-    "release": "electron-builder --win nsis --publish never"
+    "build:sidecar": "dotnet publish sidecar/CursorSidecar.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o sidecar/publish",
+    "dist": "npm run build:sidecar && electron-builder --win nsis --publish never",
+    "release": "npm run build:sidecar && electron-builder --win nsis --publish never"
   },
   "build": {
     "appId": "com.solis.chess",
@@ -33,7 +34,13 @@
       "repo": "solis-app-updates",
       "releaseType": "draft",
       "publishAutoUpdate": true
-    }
+    },
+    "extraResources": [
+      {
+        "from": "sidecar/publish",
+        "to": "sidecar"
+      }
+    ]
   },
   "dependencies": {
     "electron-updater": "6.8.9"
