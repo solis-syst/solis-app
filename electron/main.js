@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, net, protocol } = require("electron");
+const { app, BrowserWindow, ipcMain, net, protocol, screen } = require("electron");
+const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
@@ -18,6 +19,7 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow = null;
 let browserWindow = null;
+let cursorSidecar = null;
 
 function getConfigPath() {
   return path.join(app.getPath("userData"), "config.json");
@@ -61,6 +63,70 @@ function sendAnalyzerMessage(message) {
   mainWindow.webContents.send("analyzer:message", message);
 }
 
+function getCursorSidecarPath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "sidecar", "CursorSidecar.exe");
+  }
+
+  return path.join(__dirname, "../sidecar/publish/CursorSidecar.exe");
+}
+
+function startCursorSidecar() {
+  if (cursorSidecar && !cursorSidecar.killed && cursorSidecar.stdin?.writable) {
+    return cursorSidecar;
+  }
+
+  const exePath = getCursorSidecarPath();
+
+  if (!fs.existsSync(exePath)) {
+    console.error("Cursor sidecar not found:", exePath);
+    return null;
+  }
+
+  const child = spawn(exePath, [], {
+    stdio: ["pipe", "ignore", "pipe"],
+    windowsHide: true
+  });
+
+  child.stderr.on("data", (data) => {
+    console.error("Cursor sidecar error:", data.toString());
+  });
+
+  child.on("error", (error) => {
+    console.error("Cursor sidecar process error:", error);
+    if (cursorSidecar === child) cursorSidecar = null;
+  });
+
+  child.on("exit", () => {
+    if (cursorSidecar === child) cursorSidecar = null;
+  });
+
+  cursorSidecar = child;
+  return child;
+}
+
+function sendCursorCommand(command) {
+  const child = startCursorSidecar();
+  if (!child || !child.stdin?.writable) return false;
+
+  try {
+    child.stdin.write(JSON.stringify(command) + "\n");
+    return true;
+  } catch (error) {
+    console.error("Cursor sidecar command failed:", error);
+    return false;
+  }
+}
+
+function pagePointToScreenPoint(x, y) {
+  const contentBounds = browserWindow.getContentBounds();
+
+  return screen.dipToScreenPoint({
+    x: contentBounds.x + x,
+    y: contentBounds.y + y
+  });
+}
+
 function performPageMouseDrag(message) {
   if (!browserWindow || browserWindow.isDestroyed()) return false;
 
@@ -73,47 +139,33 @@ function performPageMouseDrag(message) {
 
   browserWindow.focus();
 
-  const webContents = browserWindow.webContents;
-  const startX = Math.round(fromX);
-  const startY = Math.round(fromY);
-  const endX = Math.round(toX);
-  const endY = Math.round(toY);
-  const middleX = Math.round((startX + endX) / 2);
-  const middleY = Math.round((startY + endY) / 2);
+  const start = pagePointToScreenPoint(fromX, fromY);
+  const end = pagePointToScreenPoint(toX, toY);
+  const middle = {
+    x: Math.round((start.x + end.x) / 2),
+    y: Math.round((start.y + end.y) / 2)
+  };
 
-  webContents.sendInputEvent({
-    type: "mouseMove",
-    x: startX,
-    y: startY
+  if (!sendCursorCommand({
+    action: "move",
+    x: Math.round(start.x),
+    y: Math.round(start.y)
+  })) {
+    return false;
+  }
+
+  sendCursorCommand({ action: "down" });
+  sendCursorCommand({
+    action: "move",
+    x: middle.x,
+    y: middle.y
   });
-  webContents.sendInputEvent({
-    type: "mouseDown",
-    x: startX,
-    y: startY,
-    button: "left",
-    clickCount: 1
+  sendCursorCommand({
+    action: "move",
+    x: Math.round(end.x),
+    y: Math.round(end.y)
   });
-  webContents.sendInputEvent({
-    type: "mouseMove",
-    x: middleX,
-    y: middleY,
-    button: "left",
-    modifiers: ["leftbuttondown"]
-  });
-  webContents.sendInputEvent({
-    type: "mouseMove",
-    x: endX,
-    y: endY,
-    button: "left",
-    modifiers: ["leftbuttondown"]
-  });
-  webContents.sendInputEvent({
-    type: "mouseUp",
-    x: endX,
-    y: endY,
-    button: "left",
-    clickCount: 1
-  });
+  sendCursorCommand({ action: "up" });
 
   return true;
 }
@@ -414,6 +466,13 @@ app.whenReady().then(() => {
       setupUpdater(mainWindow);
     }
   });
+});
+
+app.on("will-quit", () => {
+  if (cursorSidecar && !cursorSidecar.killed) {
+    cursorSidecar.kill();
+    cursorSidecar = null;
+  }
 });
 
 app.on("window-all-closed", () => {
