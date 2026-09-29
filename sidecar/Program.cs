@@ -60,12 +60,12 @@ internal static class CursorController
     private const uint MouseEventfWheel = 0x0800;
 
     [DllImport("user32.dll")]
-    private static extern bool SetCursorPos(int x, int y);
+    private static extern bool NativeSetCursorPos(int x, int y);
 
     [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
     private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, uint dwExtraInfo);
 
-    public static void SetCursorPos(int x, int y) => CursorController.SetCursorPos(x, y);
+    public static void SetCursorPos(int x, int y) => NativeSetCursorPos(x, y);
 
     public static void MouseDown() => mouse_event(MouseEventfLeftDown, 0, 0, 0, 0);
 
