@@ -61,6 +61,63 @@ function sendAnalyzerMessage(message) {
   mainWindow.webContents.send("analyzer:message", message);
 }
 
+function performPageMouseDrag(message) {
+  if (!browserWindow || browserWindow.isDestroyed()) return false;
+
+  const fromX = Number(message?.fromX);
+  const fromY = Number(message?.fromY);
+  const toX = Number(message?.toX);
+  const toY = Number(message?.toY);
+
+  if (![fromX, fromY, toX, toY].every(Number.isFinite)) return false;
+
+  browserWindow.focus();
+
+  const webContents = browserWindow.webContents;
+  const startX = Math.round(fromX);
+  const startY = Math.round(fromY);
+  const endX = Math.round(toX);
+  const endY = Math.round(toY);
+  const middleX = Math.round((startX + endX) / 2);
+  const middleY = Math.round((startY + endY) / 2);
+
+  webContents.sendInputEvent({
+    type: "mouseMove",
+    x: startX,
+    y: startY
+  });
+  webContents.sendInputEvent({
+    type: "mouseDown",
+    x: startX,
+    y: startY,
+    button: "left",
+    clickCount: 1
+  });
+  webContents.sendInputEvent({
+    type: "mouseMove",
+    x: middleX,
+    y: middleY,
+    button: "left",
+    modifiers: ["leftbuttondown"]
+  });
+  webContents.sendInputEvent({
+    type: "mouseMove",
+    x: endX,
+    y: endY,
+    button: "left",
+    modifiers: ["leftbuttondown"]
+  });
+  webContents.sendInputEvent({
+    type: "mouseUp",
+    x: endX,
+    y: endY,
+    button: "left",
+    clickCount: 1
+  });
+
+  return true;
+}
+
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -229,6 +286,11 @@ async function handleRuntimeMessage(sender, message) {
   if (!message || typeof message !== "object") return;
 
   sendAnalyzerMessage(message);
+
+  if (message.type === "DRAG_MOVE") {
+    performPageMouseDrag(message);
+    return;
+  }
 
   if (message.type === "FETCH_AUDIO") {
     return;
