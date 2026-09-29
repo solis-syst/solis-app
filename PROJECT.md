@@ -60,6 +60,10 @@ solis-app/
 │   ├── index.html
 │   ├── renderer.js
 │   └── styles.css
+├── sidecar/
+│   ├── CursorSidecar.csproj
+│   ├── Program.cs
+│   └── publish/ (generated)
 ├── engines/
 │   ├── chess_min.js
 │   ├── engine.js
@@ -127,6 +131,8 @@ Responsibilities:
 - Persist configuration in Electron `userData/config.json`.
 - Handle IPC for browser control, configuration, page messages, and update installation.
 - Forward analyzer messages to the Solis renderer.
+- Spawn the Windows cursor sidecar for automatic board moves.
+- Translate analyzer board coordinates into Windows screen coordinates for the sidecar.
 
 Security settings currently used for Electron windows:
 - `contextIsolation: true`
@@ -159,6 +165,19 @@ Responsibilities:
 - Bridge configuration get/set/clear.
 - Bridge update installation.
 - Subscribe to analyzer and updater events.
+
+### Cursor sidecar
+
+Project:
+`sidecar/CursorSidecar.csproj`
+
+Responsibilities:
+- Run as a Windows .NET console sidecar.
+- Read newline-delimited JSON mouse commands from Electron stdin.
+- Move the Windows cursor and emit left-button drag/click/scroll input through Win32.
+- Remain outside the renderer and analyzer runtime.
+
+Electron starts the sidecar only when an analyzer `DRAG_MOVE` is received. The sidecar is packaged outside Electron ASAR under `resources/sidecar/`.
 
 ### Page bridge
 
@@ -361,6 +380,8 @@ Current main-process IPC handlers include:
 - `browser:page-message`
 - `update:install`
 
+The analyzer's existing `DRAG_MOVE` message is handled inside the Electron main process. No new renderer IPC channel is required for automatic board movement.
+
 Current renderer event channels include:
 - `analyzer:message`
 - `update:status`
@@ -553,7 +574,20 @@ The page bridge is prepended before these analyzer files.
 
 Do not change injection order without checking initialization dependencies.
 
-## 18. Known Current Limitations
+## 18. Cursor Sidecar
+
+Automatic move execution now uses the existing analyzer `DRAG_MOVE` payload and a Windows .NET cursor sidecar.
+
+The analyzer continues calculating board-relative coordinates in `content.js`. Electron converts those coordinates from the managed browser content area (DIP) to physical Windows screen coordinates with Electron's screen conversion API, then sends `move`, `down`, `move`, `move`, and `up` JSON commands to the sidecar.
+
+The Solis renderer does not capture global mouse movement for this feature.
+
+The sidecar is built with:
+`dotnet publish sidecar/CursorSidecar.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o sidecar/publish`
+
+Electron-builder copies `sidecar/publish` into packaged resources as `sidecar`.
+
+## 19. Known Current Limitations
 
 - Renderer UI is still a basic dashboard and is not the final Solis UI.
 - There is no dedicated engine-manager abstraction yet; engine selection lives in the analyzer.
@@ -566,7 +600,7 @@ Do not change injection order without checking initialization dependencies.
 - `utils/no` and `book/no` are still present.
 - Current browser/page message handling should receive a dedicated security review before exposing more capabilities.
 
-## 19. Change Rules
+## 20. Change Rules
 
 For every implementation request:
 
@@ -590,7 +624,7 @@ For Electron cross-cutting work:
 - Check main/renderer/preload/page boundaries together.
 - Treat IPC, custom-protocol asset loading, Worker execution, WASM/ONNX packaging, and updater behavior as high-risk areas.
 
-## 20. Verification Checklist
+## 21. Verification Checklist
 
 Before considering a major Solis change complete:
 
@@ -602,6 +636,9 @@ Before considering a major Solis change complete:
 - [ ] Lichess opens in managed browser
 
 ### Bridge
+- [ ] Cursor sidecar starts on first automatic move
+- [ ] Analyzer drag coordinates are converted correctly at non-100% Windows DPI
+- [ ] Automatic drag reaches the managed chess board
 - [ ] `solis://bundle/` asset loading works
 - [ ] Analyzer injection runs
 - [ ] Chrome compatibility APIs used by the analyzer work
@@ -633,7 +670,7 @@ Before considering a major Solis change complete:
 - [ ] Differential download works when a usable previous blockmap is available
 - [ ] Full-download fallback works when differential data cannot be used
 
-## 21. Future Decision Log
+## 22. Future Decision Log
 
 Add entries here when an architecture or release decision becomes stable.
 
@@ -659,6 +696,12 @@ Status: Active.
 Decision: Treat solis-syst/solis-app-updates as the sole release-tag and GitHub Releases target. The source repository provides source and, when tag-triggered, the version signal only.
 Reason: The source repository does not need release tags for publishing; keeping release metadata and artifacts in the dedicated update repository is simpler and avoids duplicate release-tag management.
 Affected files: `.github/workflows/release.yml`.
+Status: Active.
+
+2026-09-29
+Decision: Use a Windows .NET cursor sidecar for automatic board movement.
+Reason: The analyzer already emits board-relative DRAG_MOVE coordinates, while the managed browser path needs reliable OS-level mouse input.
+Affected files: sidecar/CursorSidecar.csproj, sidecar/Program.cs, electron/main.js, package.json.
 Status: Active.
 
 2026-09-27
