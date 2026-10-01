@@ -1,0 +1,26 @@
+{
+    "schemaVersion": 1,
+    "id": "mcclient",
+    "version": "${version}",
+    "name": "MC Client",
+    "description": "Custom Minecraft Java client foundation.",
+    "authors": [
+        "He"
+    ],
+    "license": "All-Rights-Reserved",
+    "environment": "client",
+    "entrypoints": {
+        "main": [
+            "dev.mcclient.McClient"
+        ],
+        "client": [
+            "dev.mcclient.McClientClient"
+        ]
+    },
+    "depends": {
+        "fabricloader": ">=0.19.5",
+        "minecraft": "~26.3",
+        "java": ">=25",
+        "fabric-api": "*"
+    }
+}
