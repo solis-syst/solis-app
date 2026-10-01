@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "solis",
+  "version": "${version}",
+  "name": "Solis Client",
+  "description": "Solis Minecraft client.",
+  "environment": "client",
+  "entrypoints": { "client": ["com.solis.SolisClient"] },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
